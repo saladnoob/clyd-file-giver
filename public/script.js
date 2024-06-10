@@ -1,29 +1,20 @@
-function uploadFile() {
-    const fileInput = document.getElementById('file-input');
-    const file = fileInput.files[0];
-    if (!file) {
-        alert('Please select a file.');
-        return;
-    }
+document.getElementById('upload-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const fileInput = document.getElementById('file-input');
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    fetch('/.netlify/functions/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const downloadUrl = document.getElementById('download-url');
-            downloadUrl.href = data.url;
-            document.getElementById('download-link').classList.remove('hidden');
-        } else {
-            alert('File upload failed.');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
+  try {
+    const response = await fetch('/.netlify/functions/upload', {
+      method: 'POST',
+      body: formData
     });
-}
+    
+    const result = await response.json();
+    document.getElementById('message').innerText = result.message;
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('message').innerText = 'An error occurred. Please try again.';
+  }
+});
