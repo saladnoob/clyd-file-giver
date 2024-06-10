@@ -1,32 +1,33 @@
+const serverless = require('serverless-http');
+const express = require('express');
+const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const multer = require('multer');
-const upload = multer({ dest: '/tmp/' });
 
-exports.handler = async (event, context) => {
-    return new Promise((resolve, reject) => {
-        upload.single('file')(event, context, (err) => {
-            if (err) {
-                reject({
-                    statusCode: 500,
-                    body: JSON.stringify({ success: false, error: err.message })
-                });
-                return;
-            }
+const app = express();
+const upload = multer({ dest: '/tmp/uploads/' });
 
-            const file = event.file;
-            if (!file) {
-                resolve({
-                    statusCode: 400,
-                    body: JSON.stringify({ success: false })
-                });
-                return;
-            }
+app.post('/upload', upload.single('file'), (req, res) => {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
 
-            resolve({
-                statusCode: 200,
-                body: JSON.stringify({ success: true, url: `/.netlify/functions/download?filename=${file.filename}` })
-            });
-        });
+  const filePath = path.join('/tmp/uploads', file.filename);
+
+  res.download(filePath, file.originalname, (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Error downloading file' });
+    }
+
+    // Delete the file after download
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error(err);
+      }
     });
-};
+  });
+});
+
+module.exports.handler = serverless(app);
