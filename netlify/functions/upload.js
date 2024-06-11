@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const multer = require('multer');
+const formidable = require('formidable');
 
 const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
 
-const upload = multer({
+const upload = formidable({
   dest: UPLOADS_DIR,
   limits: { fileSize: 10 * 1024 * 1024 } // limit file size to 10MB
 });
