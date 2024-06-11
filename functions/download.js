@@ -14,7 +14,7 @@ exports.handler = async (event, context) => {
     }
 
     const filePath = path.join(UPLOADS_DIR, files[0]);
-    const fileStream = fs.createReadStream(filePath);
+    const fileContent = fs.readFileSync(filePath);
 
     // Set up response headers
     const headers = {
@@ -22,10 +22,14 @@ exports.handler = async (event, context) => {
       'Content-Disposition': `attachment; filename=${files[0]}`,
     };
 
+    // Delete the file after preparing response
+    fs.unlinkSync(filePath);
+
     return {
       statusCode: 200,
       headers,
-      body: fileStream,
+      body: fileContent.toString('base64'),
+      isBase64Encoded: true,
     };
   } catch (error) {
     console.error('Error:', error);
@@ -33,8 +37,5 @@ exports.handler = async (event, context) => {
       statusCode: 500,
       body: JSON.stringify({ message: 'Internal server error.' }),
     };
-  } finally {
-    // Delete the file after download
-    fs.unlinkSync(filePath);
   }
 };
