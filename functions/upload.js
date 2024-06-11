@@ -2,42 +2,27 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
 const upload = multer({ dest: UPLOADS_DIR });
 
-exports.handler = upload.single('file'), async (event) => {
-  try {
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR);
+const handler = (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Internal server error.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
     }
 
     const files = fs.readdirSync(UPLOADS_DIR);
-    if (files.length > 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Can\'t upload. Try again later.' }),
-      };
+    if (files.length > 1) {
+      fs.unlinkSync(req.file.path); // Delete newly uploaded file if there's already an existing one
+      return res.status(400).json({ message: 'Can\'t upload. Try again later.' });
     }
 
-    if (!event.file) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'No file uploaded.' }),
-      };
-    }
-
-    const uploadedFilePath = path.join(UPLOADS_DIR, event.file.filename);
-    fs.renameSync(event.file.path, uploadedFilePath);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'File uploaded successfully!' }),
-    };
-  } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: 'Internal server error.' }),
-    };
-  }
+    res.status(200).json({ message: 'File uploaded successfully!' });
+  });
 };
+
+module.exports = { handler };
