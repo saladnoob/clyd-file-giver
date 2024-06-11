@@ -3,26 +3,55 @@ const path = require('path');
 const multer = require('multer');
 
 const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
-const upload = multer({ dest: UPLOADS_DIR });
 
-const handler = (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Internal server error.' });
-    }
+const upload = multer({
+  dest: UPLOADS_DIR,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB file size limit
+});
 
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
-    }
-
-    const files = fs.readdirSync(UPLOADS_DIR);
-    if (files.length > 1) {
-      fs.unlinkSync(req.file.path); // Delete newly uploaded file if there's already an existing one
-      return res.status(400).json({ message: 'Can\'t upload. Try again later.' });
-    }
-
-    res.status(200).json({ message: 'File uploaded successfully!' });
-  });
+const checkUploadsDirectory = () => {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR);
+  }
 };
 
-module.exports = { handler };
+exports.handler = async (event, context) => {
+  return new Promise((resolve, reject) => {
+    checkUploadsDirectory();
+
+    const files = fs.readdirSync(UPLOADS_DIR);
+    if (files.length > 0) {
+      resolve({
+        statusCode: 403,
+        body: JSON.stringify({ message: 'A file is already uploaded and awaiting download.' }),
+      });
+      return;
+    }
+
+    const uploadMiddleware = upload.single('file');
+    const req = { body: event.body, headers: event.headers };
+    const res = {
+      statusCode: 200,
+      body: '',
+      setHeader: () => { },
+      end: (message) => {
+        resolve({
+          statusCode: 200,
+          body: message,
+        });
+      },
+    };
+
+    uploadMiddleware(req, res, (err) => {
+      if (err) {
+        reject({
+          statusCode: 500,
+          body: JSON.stringify({ message: 'File upload failed.', error: err.message }),
+        });
+        return;
+      }
+
+      res.end(JSON.stringify({ message: 'File uploaded successfully.' }));
+    });
+  });
+};
