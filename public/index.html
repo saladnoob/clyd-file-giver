@@ -4,17 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>File Downloader</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>File Downloader</h1>
-    <form id="upload-form">
-      <input type="file" id="file-input" name="file">
-      <button type="submit">Upload and Download</button>
+  <div id="upload-section">
+    <h1>Upload a File</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+      <input type="file" id="file-input" name="file" required>
+      <button type="submit">Upload</button>
     </form>
-    <div id="message"></div>
+    <div id="upload-status"></div>
   </div>
-  <script src="scripts.js"></script>
+  <div id="download-section" style="display: none;">
+    <h1>Download the File</h1>
+    <button id="download-button">Download</button>
+    <div id="download-status"></div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
